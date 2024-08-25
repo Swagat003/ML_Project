@@ -19,7 +19,7 @@ def predict_api():
         return jsonify({"error": "Content-Type must be application/json"}), 400
     
     # Parse the incoming JSON data
-    data = request.json['data']
+    data = request.json.get('data', {})
     
     try:
         # Convert data to NumPy array and reshape it for prediction
@@ -37,6 +37,28 @@ def predict_api():
     except Exception as e:
         # Handle any exceptions that may occur
         return jsonify({"error": str(e)}), 500
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        # Extract and convert form data to float
+        data = [float(x) for x in request.form.values()]
+        
+        # Reshape and scale the data
+        final_input = scaler.transform(np.array(data).reshape(1, -1))
+        
+        # Make prediction using the model
+        output = regmodel.predict(final_input)[0]
+        
+        # Render the result page with the prediction
+        return render_template('prediction.html', prediction_text=f'{output}')
+    
+    except ValueError:
+        # Handle invalid form data
+        return render_template('prediction.html', prediction_text='Invalid input. Please check your data.')
+    except Exception as e:
+        # Handle any other exceptions
+        return render_template('prediction.html', prediction_text=f'An error occurred: {str(e)}')
 
 if __name__ == '__main__':
     app.run(debug=True)
